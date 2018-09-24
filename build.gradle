@@ -1,0 +1,29 @@
+group 'io.ankushs92.ulb'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+sourceSets {
+    main.java.srcDir "src/main/java"
+    main.resources.srcDir "src/main/resources"
+}
+
+mainClassName = "ID3"
+dependencies {
+    compile group: 'com.google.guava', name: 'guava', version: '19.0'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Class-Path': configurations.compile.collect { it.getName() }.join(' '),
+                'Main-Class': 'ID3'
+        )
+    }
+}
