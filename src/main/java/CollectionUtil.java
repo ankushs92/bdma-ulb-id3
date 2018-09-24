@@ -10,17 +10,9 @@ public class CollectionUtil {
         }
         return result;
     }
-
     public static void main(String[] args) {
-        String[] array = (String[]) Arrays.asList("a", "a", "b", "c", "c", "d").toArray();
-        String[] array1 = (String[]) Arrays.asList("a", "a", "b", "c", "c", "d").toArray();
-        String[] array2 = (String[]) Arrays.asList("a", "a", "b", "c", "c", "f").toArray();
-        String[] array3 = (String[]) Arrays.asList("a", "a", "b", "c", "c", "f").toArray();
-        List<String[]> list = Arrays.asList(array, array1, array2, array3);
-        Map<Integer, List<String[]>> map = list.stream()
-            .collect(Collectors.groupingBy((String[] s) -> s[5]));
-
-
+        List<String> list = Arrays.asList("a","b","c","a");
+        Map<Integer, List<String>> m = list.stream().collect(Collectors.groupingBy(String::length));
     }
 
 }
