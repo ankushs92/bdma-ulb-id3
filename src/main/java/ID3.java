@@ -49,11 +49,18 @@ public class ID3 {
             return new DecisionTree(ImmutableSet.of(new Node<>(mostFreqValue, IS_LEAF_NODE)));
         }
 
+        final int numOfColumns = trainingDataSet.get(0).length;
+        List<List<String>> columns = new ArrayList<>();
+        for(int i = 0; i < numOfColumns; i++) {
+            final int columnNo = i; //have to do this because of "effectively final" issue with lambda expressions
+            final List<String> columnsForI = trainingDataSet.stream().map(array -> array[columnNo]).collect(toList());
+            columns.add(columnsForI);
+        }
         final List<String> targetAttributeValues = trainingDataSet.stream().map( array -> array[5]).collect(toList());
         final int targetAttributesPossibleValues = targetAttributeValues
                                                                   .stream()
                                                                   .distinct()
-                                                                  .collect(Collectors.toList())
+                                                                  .collect(toList())
                                                                   .size();
 
         if(targetAttributesPossibleValues == 1) {
@@ -61,7 +68,15 @@ public class ID3 {
         }
 
         final double entropy = entropy(targetAttributeValues);
+        final int totalNumOfElements = trainingDataSet.size(); //think of this as total number of elements in an entire column
 
+        final Map<String, Double> attributesEntropySplitMap = new HashMap<>();
+        for(final List<String> column : columns) {
+            final Map<String, Long> split = column.stream()
+                                                  .collect(groupingBy(str -> str , Collectors.counting()));
+
+
+        }
         return null;
     }
 
@@ -93,8 +108,10 @@ public class ID3 {
         return entropy;
     }
 
-    private static double entropySplit(final List<String> collection) {
+    private static double entropySplit(final int totalNumOfElements, final List<String> collection) {
+        double result = 0;
 
+        return result;
     }
 
     private static double log2(double n) {
