@@ -13,85 +13,133 @@ import static java.util.stream.Collectors.*;
 public class ID3 {
 
     private static final String COMMA_DELIM = ",";
-    private static final int TARGET_ATTRIBUTE_INDEX = 6;
+    private static int TARGET_ATTRIBUTE_INDEX = 4;
     private static final String FAILURE = "failure";
     private static final boolean IS_LEAF_NODE = true;
-    private static final List<String> INPUT_ATTRIBUTES = Arrays.asList(
-            "buying", "maint", "doors", "persons", "lug_boot", "safety"
-    );
-    private static final String FILE_LOCATION= "/Users/ankushsharma/Downloads/car_eval.csv";
+    private static final boolean IS_NOT_LEAF_NODE = false;
+    private static final boolean IS_NOT_ROOT_NODE = false;
+    private static final boolean IS_ROOT_NODE = true;
+    private static final String FILE_LOCATION = "/Users/ankushsharma/Downloads/classexample.csv";
 
+    private static final Map<Integer, String> CATEGORIES;
+
+    static {
+        CATEGORIES = new HashMap<>();
+//        CATEGORIES.put(0, "buying");
+//        CATEGORIES.put(1, "maint");
+//        CATEGORIES.put(2, "doors");
+//        CATEGORIES.put(3, "persons");
+//        CATEGORIES.put(4, "lug_boot");
+//        CATEGORIES.put(5, "safety");
+//        CATEGORIES.put(6, "car_evaluation");
+        CATEGORIES.put(0, "outlook");
+        CATEGORIES.put(1, "temperature");
+        CATEGORIES.put(2, "humidity");
+        CATEGORIES.put(3, "windy");
+        CATEGORIES.put(4, "play");
+//        outlook,temperature,humidity,windy,play
+
+    }
     public static void main(final String[] args) throws IOException {
 
-         List<String[]> trainingDataSet = Files.lines(Paths.get(FILE_LOCATION))
-                                                    .map( str -> str.split(COMMA_DELIM))
-                                                    .collect(toList());
+        List<String[]> trainingDataSet = Files.lines(Paths.get(FILE_LOCATION))
+                                              .map(str -> str.split(COMMA_DELIM))
+                                              .collect(toList());
 
-         DecisionTree decisionTree = computeBestPossibleDecisionTree(INPUT_ATTRIBUTES, TARGET_ATTRIBUTE_INDEX, trainingDataSet);
+        List<Integer> columnIndexes = new ArrayList<>();
+        int totalColumns = trainingDataSet.get(0).length;
+        for (int i = 0; i < totalColumns ; i++) {
+            if(i != TARGET_ATTRIBUTE_INDEX) {
+                columnIndexes.add(i);
+            }
+        }
+        Node node = buildTree(columnIndexes, TARGET_ATTRIBUTE_INDEX, trainingDataSet, "Root ");
+        printNodes(node, "");
+    }
+    private static void printNodes(Node node, String spacing) {
+
+        if(node.isLeaf) {
+            String label;
+            try {
+                label = node.information;
+            }
+            catch (Exception ex) {
+                label = node.information;
+            }
+            System.out.println(spacing + "Decision : " + label);
+            return;
+        }
+        System.out.println("Asass " + node.name);
+
+        for(Node childNode : node.childNodes) {
+            String label = childNode.name;
+            System.out.println(spacing + "---> " + label);
+            printNodes(childNode, spacing + "|    ");
+        }
     }
 
-    private static DecisionTree computeBestPossibleDecisionTree(
-         List<String> inputAttributes,
-         int targetAttributeIndex,
-         List<String[]> trainingDataSet
+    private static Node buildTree(
+            List<Integer> inputAttributesIndexes,
+            int targetAttributeIndex,
+            List<String[]> trainingDataSet,
+            String nodeName
     )
     {
         if(isNullOrEmpty(trainingDataSet)) {
-            return new DecisionTree(singletonList(new Node<>(FAILURE, IS_LEAF_NODE)));
+            return new Node(FAILURE, FAILURE, Collections.emptyList(), IS_LEAF_NODE, IS_NOT_ROOT_NODE);
         }
 
-        if(isNullOrEmpty(inputAttributes)) {
-            String  mostFreqValue = findMostFreqValue(trainingDataSet);
-            return new DecisionTree(singletonList(new Node<>(mostFreqValue, IS_LEAF_NODE)));
+        if(isNullOrEmpty(inputAttributesIndexes)) {
+            String mostFreqValue = findMostFreqValue(trainingDataSet, targetAttributeIndex);
+            return new Node(mostFreqValue, mostFreqValue, Collections.emptyList(), IS_LEAF_NODE, IS_NOT_ROOT_NODE);
         }
 
-        int numOfColumns = trainingDataSet.get(0).length;
         Map<Integer, List<String>> indexWithColumnsMap = new HashMap<>();
-        for(int i = 0; i < numOfColumns; i++) {
-            int columnNo = i; //have to do this because of "effectively final" issue with lambda expressions
-            if(columnNo != targetAttributeIndex) {
-                List<String> columnsForI = trainingDataSet.stream().map(array -> array[columnNo]).collect(toList());
-                indexWithColumnsMap.put(columnNo, columnsForI);
+        for(Integer columnIndex : inputAttributesIndexes) {
+            if(!columnIndex.equals(targetAttributeIndex)) {
+                List<String> columnsForI = trainingDataSet.stream().map(array -> array[columnIndex]).collect(toList());
+                indexWithColumnsMap.put(columnIndex, columnsForI);
             }
+
         }
         List<String> targetAttributeValues = trainingDataSet.stream().map( array -> array[targetAttributeIndex]).collect(toList());
-        int targetAttributesPossibleValues = targetAttributeValues
-                                                                  .stream()
-                                                                  .distinct()
-                                                                  .collect(toList())
-                                                                  .size();
+        List<String> targetAttributesDistinctValues = targetAttributeValues.stream().distinct().collect(toList());
+        int targetAttributesPossibleValues = targetAttributesDistinctValues.size();
 
+        System.out.println(targetAttributeValues);
         if(targetAttributesPossibleValues == 1) {
-            return new DecisionTree(singletonList(new Node<>(trainingDataSet.get(0)[targetAttributeIndex], IS_LEAF_NODE)));
+            System.out.println("Aaaaaaassjhciascis ");
+            System.out.println("Cat "+ CATEGORIES.get(targetAttributeIndex));
+            System.out.println("targetAttributesDistinctValues "+  targetAttributesDistinctValues.get(0));
+            return new Node(CATEGORIES.get(targetAttributeIndex), targetAttributesDistinctValues.get(0), Collections.emptyList(), IS_LEAF_NODE, IS_NOT_ROOT_NODE);
         }
 
         double entropy = entropy(targetAttributeValues);
-        System.out.println("Total Entropy is : " + entropy);
         Map<Integer, Double> columnIndexToEntropyGainMap = new HashMap<>();
         for(Entry<Integer, List<String>> indexWithColumn : indexWithColumnsMap.entrySet()) {
             int columnIndex = indexWithColumn.getKey();
             List<String> column = indexWithColumn.getValue();
             double totalColumnSize = column.size();
             Map<String, Long> columnValuesWithCount = column.stream()
-                                                             .collect(groupingBy(str -> str, Collectors.counting()));
-            System.out.println("Calculating Entropy Split for Column with index : " + columnIndex);
+                                                            .collect(groupingBy(str -> str, counting()));
             double entropySplit = 0;
             for(Entry<String, Long> columnValWithCount : columnValuesWithCount.entrySet()) {
                 String columnValue = columnValWithCount.getKey();
                 double count = columnValWithCount.getValue();
                 List<String> classAttributeColumnValueThatMatchesAttrColVal = trainingDataSet.stream()
                                                                                              .filter( array -> {
-                                                                                                  //We are looking for array value that matches column index
-                                                                                                  return array[columnIndex].equalsIgnoreCase(columnValue);
-                                                                                              })
-                                                                                              .map( array -> array[targetAttributeIndex])
-                                                                                              .collect(toList());
+                                                                                                //We are looking for array value that matches column index
+                                                                                                return array[columnIndex].equalsIgnoreCase(columnValue);
+                                                                                             })
+                                                                                            .map( array -> array[targetAttributeIndex])
+                                                                                            .collect(toList());
+
 
                 entropySplit += ((count / totalColumnSize) * entropy(classAttributeColumnValueThatMatchesAttrColVal));
                 double informationGain = entropy - entropySplit;
                 columnIndexToEntropyGainMap.put(columnIndex, informationGain);
             }
-            System.out.println("Entropy Split for Index " + columnIndex + " is " + entropySplit);
+//            System.out.println("Entropy Split for Index " + columnIndex + " is " + entropySplit);
         }
 
         columnIndexToEntropyGainMap.forEach(( columnIndex, informationGain) -> {
@@ -102,7 +150,6 @@ public class ID3 {
                                                                     .max(Map.Entry.comparingByValue())
                                                                     .get()
                                                                     .getKey();
-        System.out.println("Index with Highest Gain is " + indexOfAttrWithHighestGain);
 
         List<String> splitAttribute = indexWithColumnsMap.entrySet()
                                                          .stream()
@@ -110,14 +157,43 @@ public class ID3 {
                                                          .collect(toList())
                                                          .get(0)
                                                          .getValue();
+        List<Node> childNodes = new LinkedList<>();
 
-        return null;
+        if(!isNullOrEmpty(splitAttribute)) {
+            List<String> possibleValuesOfSplitAttribute = splitAttribute.stream()
+                                                                        .distinct()
+                                                                        .collect(toList());
+
+            for(String possibleValue : possibleValuesOfSplitAttribute) {
+                System.out.println("Possible Value " + possibleValue);
+
+                List<String[]> truncatedTrainingDataSet = trainingDataSet.stream()
+                                                                        .filter( array -> array[indexOfAttrWithHighestGain].equalsIgnoreCase(possibleValue))
+                                                                        .collect(toList());
+
+                List<Integer> remainingColumnIndexes = inputAttributesIndexes.stream()
+                                                                             .filter( index -> !index.equals(indexOfAttrWithHighestGain))
+                                                                             .collect(toList());
+
+                System.out.println("Remaining column Indexes " + remainingColumnIndexes);
+                System.out.println("targetAttributeIndex " + targetAttributeIndex);
+                System.out.println("Node Name " + CATEGORIES.get(indexOfAttrWithHighestGain) + "---> " + possibleValue);
+
+                Node childNode = buildTree(remainingColumnIndexes, targetAttributeIndex, truncatedTrainingDataSet, CATEGORIES.get(indexOfAttrWithHighestGain) + "---> " + possibleValue);
+                childNodes.add(childNode);
+            }
+        }
+        Node node = new Node(nodeName, String.valueOf(indexOfAttrWithHighestGain), childNodes, IS_NOT_LEAF_NODE, IS_ROOT_NODE);
+        System.out.println("ROOT NODE INFO : " + node);
+
+        return node;
     }
 
 
-    private static String findMostFreqValue(List<String[]> collection) {
+
+    private static String findMostFreqValue(List<String[]> collection, int columnIndex) {
         Map<String, Long> map = collection.stream()
-                                                .collect(groupingBy(array -> array[5], Collectors.counting()));
+                                                .collect(groupingBy(array -> array[columnIndex], counting()));
 
         Optional<Entry<String, Long>> resultOpt = map.entrySet()
                                                            .stream()
@@ -132,7 +208,7 @@ public class ID3 {
     private static double entropy(List<String> collection) {
         double total = collection.size();
         Map<String, Long> map = collection.stream()
-                                          .collect(groupingBy(str -> str , Collectors.counting()));
+                                          .collect(groupingBy(str -> str , counting()));
 
         double entropy = 0.0;
         for(Entry<String, Long> entry : map.entrySet()) {
@@ -148,59 +224,43 @@ public class ID3 {
 
 
     // ========= Classes
-    private static class Node<T> {
+    private static class Node {
 
-        private final T content;
+        private final String name;
+        private final String information;
+        private final List<Node> childNodes;
         private final boolean isLeaf;
+        private final boolean isRoot;
 
         public Node(
-                final T content,
-                final boolean isLeaf
+                final String name,
+                final String information,
+                final List<Node> childNodes,
+                final boolean isLeaf,
+                final boolean isRoot
         )
         {
-            this.content = content;
+            this.name = name;
+            this.information = information;
+            this.childNodes = childNodes;
             this.isLeaf = isLeaf;
+            this.isRoot = isRoot;
         }
 
-        public T getContent() {
-            return content;
-        }
-
-        public boolean isLeaf() {
-            return isLeaf;
-        }
-    }
-
-    private static class DecisionTree {
-
-        private final List<Node> nodes;
-
-        public DecisionTree(final List<Node> nodes) {
-            this.nodes = nodes;
-        }
-
-
-        public List<Node> getNodes() {
-            return nodes;
+        @Override
+        public String toString() {
+            return "Node{" +
+                    "name='" + name + '\'' +
+                    ", information='" + information + '\'' +
+                    ", childNodes=" + childNodes +
+                    ", isLeaf=" + isLeaf +
+                    ", isRoot=" + isRoot +
+                    '}';
         }
     }
 
     //========== Utility methods
     private static final String EMPTY = "";
-
-    public static boolean hasText(String text) {
-        boolean result = false;
-        if(Objects.isNull(text)) {
-            result = true;
-        }
-        for(char character : text.toCharArray()) {
-            if(!Character.isWhitespace(character)) {
-                result = true;
-                break;
-            }
-        }
-        return result;
-    }
 
 
     private static <T> boolean isNullOrEmpty(Collection<T> collection) {
@@ -210,5 +270,6 @@ public class ID3 {
         }
         return result;
     }
+
 
 }
