@@ -1,61 +1,55 @@
-import com.google.common.collect.ImmutableSet;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.*;
 
 public class ID3 {
 
     private static final String COMMA_DELIM = ",";
-    private static int TARGET_ATTRIBUTE_INDEX = 6;
     private static final String FAILURE = "failure";
     private static final boolean IS_LEAF_NODE = true;
     private static final boolean IS_NOT_LEAF_NODE = false;
     private static final boolean IS_NOT_ROOT_NODE = false;
     private static final boolean IS_ROOT_NODE = true;
-    private static final String FILE_LOCATION = "/Users/ankushsharma/Downloads/car_eval.csv";
+    private static final Map<Integer, String> CATEGORIES = new HashMap<>();
 
-    private static final Map<Integer, String> CATEGORIES;
+    public static void main(String[] args) throws IOException {
+        if(isNullOrEmpty(Arrays.asList(args))) {
+            throw new RuntimeException("Please pass in the following Values : Car Evaluation Data Set (1st parameter), Index of Target attribute(2nd parameter)");
+        }
 
-    static {
-        CATEGORIES = new HashMap<>();
-        CATEGORIES.put(0, "buying");
-        CATEGORIES.put(1, "maint");
-        CATEGORIES.put(2, "doors");
-        CATEGORIES.put(3, "persons");
-        CATEGORIES.put(4, "lug_boot");
-        CATEGORIES.put(5, "safety");
-        CATEGORIES.put(6, "car_evaluation");
-//        CATEGORIES.put(0, "outlook");
-//        CATEGORIES.put(1, "temperature");
-//        CATEGORIES.put(2, "humidity");
-//        CATEGORIES.put(3, "windy");
-//        CATEGORIES.put(4, "play");
-//        outlook,temperature,humidity,windy,play
+        String fileLocation = args[0];
+        if(!hasText(fileLocation)) {
+            throw new RuntimeException("Please pass the file location!");
+        }
 
-    }
-    public static void main(final String[] args) throws IOException {
+        int targetAttributeIndex = Integer.valueOf(args[1]);
 
-        List<String[]> trainingDataSet = Files.lines(Paths.get(FILE_LOCATION))
-                                              .map(str -> str.split(COMMA_DELIM))
-                                              .collect(toList());
+        List<String[]> trainingDataSetWithHeader = Files.lines(Paths.get(fileLocation))
+                                                        .map(str -> str.split(COMMA_DELIM))
+                                                        .collect(toList());
 
+        String[] headers = trainingDataSetWithHeader.stream().findFirst().get();
+        for(int j = 0 ; j < headers.length ; j++) {
+            CATEGORIES.put(j, headers[j]);
+        }
+        System.out.println(CATEGORIES);
+
+        List<String[]> trainingDataSet = trainingDataSetWithHeader.stream()
+                                                                .skip(1)
+                                                                .collect(toList());
         List<Integer> columnIndexes = new ArrayList<>();
-        int totalColumns = trainingDataSet.get(0).length;
+        int totalColumns = trainingDataSetWithHeader.get(0).length;
         for (int i = 0; i < totalColumns ; i++) {
-            if(i != TARGET_ATTRIBUTE_INDEX) {
+            if(i != targetAttributeIndex) {
                 columnIndexes.add(i);
             }
         }
-        Node node = buildTree(columnIndexes, TARGET_ATTRIBUTE_INDEX, trainingDataSet, "Root ");
+        Node node = buildTree(columnIndexes, targetAttributeIndex, trainingDataSet, "Root ");
         printNodes(node, "");
     }
     private static void printNodes(Node node, String spacing) {
@@ -258,6 +252,19 @@ public class ID3 {
 
     //========== Utility methods
     private static final String EMPTY = "";
+
+    private static boolean hasText(String text){
+        if(Objects.isNull(text)){
+            return false;
+        }
+        for(Character ch : text.toCharArray()){
+            if(!Character.isWhitespace(ch)){
+                return true;
+            }
+        }
+        return false;
+    }
+
 
 
     private static <T> boolean isNullOrEmpty(Collection<T> collection) {
