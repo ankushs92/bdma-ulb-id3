@@ -7,36 +7,38 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.*;
 
 public class ID3 {
 
     private static final String COMMA_DELIM = ",";
-    private static int TARGET_ATTRIBUTE_INDEX = 4;
+    private static int TARGET_ATTRIBUTE_INDEX = 6;
     private static final String FAILURE = "failure";
     private static final boolean IS_LEAF_NODE = true;
     private static final boolean IS_NOT_LEAF_NODE = false;
     private static final boolean IS_NOT_ROOT_NODE = false;
     private static final boolean IS_ROOT_NODE = true;
-    private static final String FILE_LOCATION = "/Users/ankushsharma/Downloads/classexample.csv";
+    private static final String FILE_LOCATION = "/Users/ankushsharma/Downloads/car_eval.csv";
 
     private static final Map<Integer, String> CATEGORIES;
 
     static {
         CATEGORIES = new HashMap<>();
-//        CATEGORIES.put(0, "buying");
-//        CATEGORIES.put(1, "maint");
-//        CATEGORIES.put(2, "doors");
-//        CATEGORIES.put(3, "persons");
-//        CATEGORIES.put(4, "lug_boot");
-//        CATEGORIES.put(5, "safety");
-//        CATEGORIES.put(6, "car_evaluation");
-        CATEGORIES.put(0, "outlook");
-        CATEGORIES.put(1, "temperature");
-        CATEGORIES.put(2, "humidity");
-        CATEGORIES.put(3, "windy");
-        CATEGORIES.put(4, "play");
+        CATEGORIES.put(0, "buying");
+        CATEGORIES.put(1, "maint");
+        CATEGORIES.put(2, "doors");
+        CATEGORIES.put(3, "persons");
+        CATEGORIES.put(4, "lug_boot");
+        CATEGORIES.put(5, "safety");
+        CATEGORIES.put(6, "car_evaluation");
+//        CATEGORIES.put(0, "outlook");
+//        CATEGORIES.put(1, "temperature");
+//        CATEGORIES.put(2, "humidity");
+//        CATEGORIES.put(3, "windy");
+//        CATEGORIES.put(4, "play");
 //        outlook,temperature,humidity,windy,play
 
     }
@@ -57,7 +59,6 @@ public class ID3 {
         printNodes(node, "");
     }
     private static void printNodes(Node node, String spacing) {
-
         if(node.isLeaf) {
             String label;
             try {
@@ -66,10 +67,8 @@ public class ID3 {
             catch (Exception ex) {
                 label = node.information;
             }
-            System.out.println(spacing + "Decision : " + label);
-            return;
+            System.out.println(spacing + label);
         }
-        System.out.println("Asass " + node.name);
 
         for(Node childNode : node.childNodes) {
             String label = childNode.name;
@@ -86,12 +85,12 @@ public class ID3 {
     )
     {
         if(isNullOrEmpty(trainingDataSet)) {
-            return new Node(FAILURE, FAILURE, Collections.emptyList(), IS_LEAF_NODE, IS_NOT_ROOT_NODE);
+            return new Node(FAILURE, FAILURE, emptyList(), IS_LEAF_NODE, IS_NOT_ROOT_NODE);
         }
 
         if(isNullOrEmpty(inputAttributesIndexes)) {
             String mostFreqValue = findMostFreqValue(trainingDataSet, targetAttributeIndex);
-            return new Node(mostFreqValue, mostFreqValue, Collections.emptyList(), IS_LEAF_NODE, IS_NOT_ROOT_NODE);
+            return new Node(nodeName , CATEGORIES.get(targetAttributeIndex) + ": " + mostFreqValue, emptyList(), IS_LEAF_NODE, IS_NOT_ROOT_NODE);
         }
 
         Map<Integer, List<String>> indexWithColumnsMap = new HashMap<>();
@@ -106,12 +105,12 @@ public class ID3 {
         List<String> targetAttributesDistinctValues = targetAttributeValues.stream().distinct().collect(toList());
         int targetAttributesPossibleValues = targetAttributesDistinctValues.size();
 
-        System.out.println(targetAttributeValues);
+
         if(targetAttributesPossibleValues == 1) {
-            System.out.println("Aaaaaaassjhciascis ");
-            System.out.println("Cat "+ CATEGORIES.get(targetAttributeIndex));
-            System.out.println("targetAttributesDistinctValues "+  targetAttributesDistinctValues.get(0));
-            return new Node(CATEGORIES.get(targetAttributeIndex), targetAttributesDistinctValues.get(0), Collections.emptyList(), IS_LEAF_NODE, IS_NOT_ROOT_NODE);
+            String leafValue = targetAttributesDistinctValues.get(0);
+//            Node leafNode = new Node(CATEGORIES.get(targetAttributeIndex), targetAttributesDistinctValues.get(0), emptyList(), IS_LEAF_NODE, IS_NOT_ROOT_NODE);
+//            return new Node(nodeName, leafValue, singletonList(leafNode), IS_NOT_LEAF_NODE, IS_ROOT_NODE);
+            return new Node(nodeName, CATEGORIES.get(targetAttributeIndex) + ": " + leafValue, Collections.emptyList(), IS_LEAF_NODE, IS_NOT_ROOT_NODE);
         }
 
         double entropy = entropy(targetAttributeValues);
@@ -157,7 +156,9 @@ public class ID3 {
                                                          .collect(toList())
                                                          .get(0)
                                                          .getValue();
+
         List<Node> childNodes = new LinkedList<>();
+        Node node = new Node(nodeName, String.valueOf(indexOfAttrWithHighestGain), childNodes, IS_NOT_LEAF_NODE, IS_ROOT_NODE);
 
         if(!isNullOrEmpty(splitAttribute)) {
             List<String> possibleValuesOfSplitAttribute = splitAttribute.stream()
@@ -177,18 +178,14 @@ public class ID3 {
 
                 System.out.println("Remaining column Indexes " + remainingColumnIndexes);
                 System.out.println("targetAttributeIndex " + targetAttributeIndex);
-                System.out.println("Node Name " + CATEGORIES.get(indexOfAttrWithHighestGain) + "---> " + possibleValue);
-
                 Node childNode = buildTree(remainingColumnIndexes, targetAttributeIndex, truncatedTrainingDataSet, CATEGORIES.get(indexOfAttrWithHighestGain) + "---> " + possibleValue);
                 childNodes.add(childNode);
             }
         }
-        Node node = new Node(nodeName, String.valueOf(indexOfAttrWithHighestGain), childNodes, IS_NOT_LEAF_NODE, IS_ROOT_NODE);
-        System.out.println("ROOT NODE INFO : " + node);
+//        Node node = new Node(nodeName, String.valueOf(indexOfAttrWithHighestGain), childNodes, IS_NOT_LEAF_NODE, IS_ROOT_NODE);
 
         return node;
     }
-
 
 
     private static String findMostFreqValue(List<String[]> collection, int columnIndex) {
